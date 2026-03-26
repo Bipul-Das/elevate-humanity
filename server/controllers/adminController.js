@@ -45,7 +45,10 @@ exports.approveVolunteer = async (req, res) => {
       password: 'Welcome123', 
       role: 'Volunteer',
       skills: [app.skills], // Import their skill
-      availability: app.availability
+      availability: app.availability,
+      // Fallbacks since Application form doesn't have these fields yet
+      city: 'Pending', 
+      area: 'Pending'
     });
 
     // 3. Delete the Application (Clean up)
@@ -101,13 +104,12 @@ exports.logHours = async (req, res) => {
   }
 };
 
-// ... existing imports and functions
-
 // @desc    Create a new User manually (Staff onboarding)
 // @route   POST /api/admin/users
 exports.createUser = async (req, res) => {
   try {
-    const { name, email, phone, role, password } = req.body;
+    // FIXED: Extract city and area from req.body
+    const { name, email, phone, role, password, city, area } = req.body;
 
     // Check duplicate
     const exists = await User.findOne({ email });
@@ -117,6 +119,8 @@ exports.createUser = async (req, res) => {
       name,
       email,
       phone,
+      city, // FIXED: Save to DB
+      area, // FIXED: Save to DB
       password: password || 'Elevate123', // Default password if none provided
       role,
       isVerified: true // Staff created by Admin are auto-verified
@@ -132,11 +136,13 @@ exports.createUser = async (req, res) => {
 // @route   PUT /api/admin/users/:id
 exports.updateUser = async (req, res) => {
   try {
-    const { name, email, role, phone } = req.body;
+    // FIXED: Extract city and area from req.body
+    const { name, email, role, phone, city, area } = req.body;
+    
     const user = await User.findByIdAndUpdate(
       req.params.id, 
-      { name, email, role, phone },
-      { new: true }
+      { name, email, role, phone, city, area }, // FIXED: Pass to DB
+      { new: true, runValidators: true } // FIXED: runValidators ensures regex/rules run
     );
     res.status(200).json({ success: true, data: user });
   } catch (error) {

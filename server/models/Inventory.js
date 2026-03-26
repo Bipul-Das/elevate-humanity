@@ -1,17 +1,18 @@
 // server/models/Inventory.js
 const mongoose = require('mongoose');
-const { toTitleCase, toUpperCase } = require('../utils/sanitizers'); // Reuse our hygiene tools
+const { toTitleCase } = require('../utils/sanitizers'); // Reuse our hygiene tools
 
 const InventorySchema = new mongoose.Schema({
   itemName: {
     type: String,
     required: [true, 'Please add item name'],
+    unique: true, // <-- CRITICAL UPDATE: Enforces the "No Duplicates" rule at the database level
     trim: true,
-    set: toTitleCase // "rice bag" -> "Rice Bag"
+    set: toTitleCase 
   },
   category: {
     type: String,
-    enum: ['Food', 'Medicine', 'Clothes', 'Bibles', 'General', 'Education'],
+    enum: ['Clothes', 'Foods', 'Cash', 'Shelter'], // Strictly matched to UI Tabs
     required: true
   },
   quantity: {
@@ -21,19 +22,8 @@ const InventorySchema = new mongoose.Schema({
   },
   unit: {
     type: String,
-    default: 'pcs', // pcs, kg, boxes
+    default: 'pcs', // pcs, kg, $, beds
     trim: true
-  },
-  batchNumber: {
-    type: String,
-    required: true,
-    trim: true,
-    uppercase: true, // Auto-UPPERCASE ("b23" -> "B23")
-    unique: true // No two batches can have the same ID
-  },
-  expiryDate: {
-    type: Date,
-    required: false // Not needed for Bibles/Clothes
   },
   location: {
     type: String,
@@ -51,8 +41,8 @@ const InventorySchema = new mongoose.Schema({
   }
 }, { 
   timestamps: true, 
-  toJSON: { virtuals: true },  // <--- ADD THIS (Include virtuals in JSON)
-  toObject: { virtuals: true } // <--- ADD THIS (Include virtuals in Objects)
+  toJSON: { virtuals: true },  // Include virtuals in JSON
+  toObject: { virtuals: true } // Include virtuals in Objects
 });
 
 // Virtual Field: Check if Stock is Low

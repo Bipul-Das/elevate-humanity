@@ -1,15 +1,15 @@
+// server/routes/authRoutes.js
 const express = require('express');
-const { registerUser, loginUser, verifyUser } = require('../controllers/authController');
-const { protect, authorize } = require('../middleware/authMiddleware'); // Import Guards
+const { registerUser, loginUser } = require('../controllers/authController');
 
 const router = express.Router();
 
+// @route   POST /api/auth/register
+// @access  Public (Used for initial DB seeding or adding the first Lead Dev)
 router.post('/register', registerUser);
-router.post('/login', loginUser);
 
-// NEW: Protected Route for verifying users
-// 1. Must be logged in (protect)
-// 2. Must be Admin or Lead Dev (authorize)
-router.put('/verify/:id', protect, authorize('Lead Developer', 'Org Admin'), verifyUser);
+// @route   POST /api/auth/login
+// @access  Public
+router.post('/login', loginUser);
 
 module.exports = router;

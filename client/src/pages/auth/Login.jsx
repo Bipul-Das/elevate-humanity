@@ -1,12 +1,11 @@
 // client/src/pages/auth/Login.jsx
 import { useState } from "react";
 import { login } from "../../services/api";
-import toast from "react-hot-toast"; // The Professional Notification
-import { useNavigate } from 'react-router-dom'; // <--- ADD THIS
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  // State: To store what the user types
-  const navigate = useNavigate(); // <--- ADD THIS
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -14,7 +13,6 @@ const Login = () => {
 
   const { email, password } = formData;
 
-  // Handle Typing
   const onChange = (e) => {
     setFormData((prevState) => ({
       ...prevState,
@@ -22,31 +20,19 @@ const Login = () => {
     }));
   };
 
-  // Handle Submit button
   const onSubmit = async (e) => {
-    e.preventDefault(); // Stop page refresh
+    e.preventDefault();
 
-    // Validation: Check empty fields
     if (!email || !password) {
       toast.error("Please enter both email and password.");
       return;
     }
 
     try {
-      // Call the API Bridge
-      // ... inside try block ...
       await login(email, password);
       toast.success(`Welcome back!`);
-
-      // NEW: Redirect to Dashboard immediately
       navigate("/dashboard");
-
-      // Temporary: Log to console to prove it worked
-      console.log("Logged In Successfully!");
-
-      // TODO: Redirect to Dashboard (We will add this next)
     } catch (error) {
-      // Error Handling
       const message = error.response?.data?.error || "Login failed";
       toast.error(message);
     }

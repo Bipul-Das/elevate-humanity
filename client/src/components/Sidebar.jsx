@@ -75,7 +75,7 @@ const Sidebar = () => {
         )}
 
         {/* 5. CASES (Admins & Committee) */}
-        {["Lead Developer", "Org Admin", "Committee"].includes(role) && (
+        {["Lead Developer", "Admin", "Member"].includes(role) && (
           <li className="nav-item">
             <Link
               to="/cases"

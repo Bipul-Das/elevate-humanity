@@ -2,26 +2,25 @@
 const mongoose = require('mongoose');
 
 const ApplicationSchema = new mongoose.Schema({
-  fullName: { type: String, required: true },
-  email: { type: String, required: true, unique: true }, // Prevent duplicate applications
-  phone: { type: String, required: true },
-  
-  // What are they good at?
-  skills: { 
+  fullName: { type: String, required: true, trim: true },
+  email: { type: String, required: true, lowercase: true, trim: true },
+  phone: { 
     type: String, 
-    enum: ['Medical', 'Teaching', 'Logistics/Driving', 'General Helper', 'Tech/Admin'],
-    default: 'General Helper'
+    required: true,
+    match: [/^10\d{5}$/, 'Phone number must be exactly 7 digits and start with 10']
   },
-  
-  // When can they work?
-  availability: { type: String, required: true }, // e.g., "Weekends only"
-  
-  reason: { type: String, required: true }, // "Why do you want to join?"
-  
-  status: {
-    type: String,
-    enum: ['Pending', 'Approved', 'Rejected'],
-    default: 'Pending'
+  city: { type: String, required: true, trim: true },
+  area: { type: String, required: true, trim: true },
+  roleRequested: { 
+    type: String, 
+    enum: ['Member', 'Volunteer'], 
+    required: true 
+  },
+  motivation: { type: String, required: true },
+  status: { 
+    type: String, 
+    enum: ['Pending', 'Approved', 'Rejected'], 
+    default: 'Pending' 
   }
 }, { timestamps: true });
 

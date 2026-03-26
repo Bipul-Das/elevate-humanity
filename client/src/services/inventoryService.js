@@ -1,7 +1,7 @@
 // client/src/services/inventoryService.js
 import api from './api';
 
-// Get all items (Backend sorts by Expiry Date)
+// Get all items
 export const getInventory = async () => {
   const response = await api.get('/inventory');
   return response.data;
@@ -13,11 +13,14 @@ export const addItem = async (itemData) => {
   return response.data;
 };
 
-// Redeem item via QR Code (Volunteer/Admin)
-export const redeemItem = async (batchNumber, quantityToRedeem = 1) => {
-  const response = await api.post('/inventory/redeem', {
-    batchNumber,
-    quantityToRedeem
-  });
+// Update existing item (Admin Only)
+export const updateItem = async (id, itemData) => {
+  const response = await api.put(`/inventory/${id}`, itemData);
+  return response.data;
+};
+
+// Delete item (Admin Only)
+export const deleteItem = async (id) => {
+  const response = await api.delete(`/inventory/${id}`);
   return response.data;
 };

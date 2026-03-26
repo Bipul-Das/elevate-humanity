@@ -1,16 +1,18 @@
 // server/routes/caseRoutes.js
 const express = require('express');
 const router = express.Router();
-const { getCases, createCase, updateCaseStatus } = require('../controllers/caseController');
-const { protect } = require('../middleware/authMiddleware');
+const { getCases, createCase, rejectCase, provideHelp } = require('../controllers/caseController');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-// Route: /api/cases
-router.route('/')
-  .get(protect, getCases)      // GET all cases
-  .post(protect, createCase);  // POST new case
+router.use(protect);
 
-// Route: /api/cases/:id/status
-router.route('/:id/status')
-  .put(protect, updateCaseStatus); // Update status
+// CREATE REQUEST: Only 'Committee' (Members) can do this
+router.post('/', createCase);
+
+// HANDLE REQUESTS: Only Admins / Lead Dev can view and process
+const adminAccess = authorize('Lead Developer', 'Admin');
+router.get('/', adminAccess, getCases);
+router.put('/:id/reject', adminAccess, rejectCase);
+router.post('/:id/provide', adminAccess, provideHelp);
 
 module.exports = router;

@@ -3,43 +3,40 @@ const express = require('express');
 const router = express.Router();
 const { 
   getAllUsers, 
-  createUser,       // <--- ADDED
-  updateUser,       // <--- ADDED
+  createUser,
+  updateUser,
   deleteUser, 
-  logHours,
   getApplications, 
   approveVolunteer 
 } = require('../controllers/adminController');
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-// Middleware to check if user is Admin/Lead Dev
-const adminOnly = (req, res, next) => {
-  if (req.user && ['Lead Developer', 'Org Admin'].includes(req.user.role)) {
-    next();
-  } else {
-    res.status(403).json({ error: 'Not authorized as Admin' });
-  }
-};
+/**
+ * @desc   Middleware to allow only Lead Developer and Admin roles.
+ * We updated 'Org Admin' to 'Admin' to match your new schema.
+ */
+const adminOnly = authorize('Lead Developer', 'Admin');
 
 // --- GLOBAL MIDDLEWARE ---
 router.use(protect);   // 1. Must be logged in
-router.use(adminOnly); // 2. Must be Lead Dev or Org Admin
+router.use(adminOnly); // 2. Must be Lead Dev or Admin
 
 // --- USER & STAFF MANAGEMENT ROUTES ---
+// Handles the primary Staff Management table
 router.route('/users')
   .get(getAllUsers)       // View Roster
-  .post(createUser);      // Create new Staff manually
+  .post(createUser);      // Manually provision new Staff/Volunteers
 
 router.route('/users/:id')
-  .delete(deleteUser)     // Remove User
-  .put(updateUser);       // Update Role/Details
+  .put(updateUser)        // Update User Role or Details
+  .delete(deleteUser);    // Remove User from system
 
-// --- GAMIFICATION ROUTES ---
-router.put('/users/:id/hours', logHours); // Log Volunteer Hours
-
-// --- VOLUNTEER ONBOARDING ROUTES ---
+// --- APPLICATION & ONBOARDING ROUTES ---
+// Handles the processing of public applications
 router.get('/applications', getApplications);   // View Pending Apps
 router.post('/approve/:id', approveVolunteer);  // Approve & Convert to User
+
+// NOTE: Gamification/logHours route has been permanently removed.
 
 module.exports = router;

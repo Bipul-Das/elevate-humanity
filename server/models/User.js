@@ -27,52 +27,47 @@ const UserSchema = new mongoose.Schema({
     minlength: 6,
     select: false // Security feature
   },
+  
+  // --- STRICT PHONE VALIDATION ---
   phone: {
     type: String,
     required: [true, 'Please add a phone number'],
-    trim: true
+    trim: true,
+    match: [
+      /^10\d{5}$/, 
+      'Phone number must be exactly 7 digits and start with 10'
+    ]
   },
+
+  // --- LOCATION DATA ---
+  city: {
+    type: String,
+    required: [true, 'Please add a city'],
+    trim: true,
+    set: toTitleCase
+  },
+  area: {
+    type: String,
+    required: [true, 'Please add an area'],
+    trim: true,
+    set: toTitleCase
+  },
+
+  // --- SIMPLIFIED ROLE MATRIX ---
   role: {
     type: String,
-    enum: ['Lead Developer', 'Org Admin', 'Committee', 'Volunteer', 'Donor', 'Beneficiary'],
-    default: 'Volunteer' // Changed default from Beneficiary to Volunteer for this phase
-  },
-  isVerified: {
-    type: Boolean,
-    default: false 
-  },
-
-  // --- NEW FIELDS FOR MODULE 6 (Workforce) ---
-  skills: {
-    type: [String], // e.g., ["Medical", "Driving"]
-    default: []
-  },
-  
-  availability: {
-    type: String, // e.g., "Weekends only"
-    default: ''
-  },
-
-  // --- NEW FIELDS FOR GAMIFICATION ---
-  hoursLogged: {
-    type: Number,
-    default: 0
-  },
-  badges: {
-    type: [String], // e.g., ["Bronze Helper", "Community Pillar"]
-    default: []
+    // Strictly enforced roles based on the new business logic
+    enum: ['Lead Developer', 'Admin', 'Member', 'Volunteer'],
+    default: 'Volunteer' 
   }
 
 }, { timestamps: true });
 
-// --- PASSWORD ENCRYPTION (Modern Async/Await version) ---
+// --- PASSWORD ENCRYPTION ---
 UserSchema.pre('save', async function () {
-  // 1. If password is not modified, stop
   if (!this.isModified('password')) {
     return;
   }
-
-  // 2. Generate Salt & Hash
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
