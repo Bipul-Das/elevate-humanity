@@ -15,7 +15,12 @@ export const createCampaign = async (campaignData) => {
 
 // Donate (Process Money)
 export const donate = async (paymentData) => {
-  // paymentData = { campaignId, amount, isAnonymous, paymentMethod }
   const response = await api.post('/finance/donate', paymentData);
+  return response.data;
+};
+
+// NEW: Fetch Admin Donation Ledger
+export const getAdminDonations = async (campaignId) => {
+  const response = await api.get(`/finance/campaigns/${campaignId}/admin-donations`);
   return response.data;
 };

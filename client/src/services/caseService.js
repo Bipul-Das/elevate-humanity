@@ -11,6 +11,12 @@ export const createCase = async (caseData) => {
   return response.data;
 };
 
+// NEW: Fetch user's personal requests
+export const getMyRequests = async () => {
+  const response = await api.get('/cases/my-requests');
+  return response.data;
+};
+
 export const rejectCase = async (id) => {
   const response = await api.put(`/cases/${id}/reject`);
   return response.data;

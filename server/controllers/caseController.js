@@ -105,3 +105,23 @@ exports.provideHelp = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// Add this new function to server/controllers/caseController.js
+
+// @desc    Get logged-in user's help requests
+// @route   GET /api/cases/my-requests
+// @access  Private (All logged-in users)
+exports.getMyCases = async (req, res) => {
+  try {
+    const cases = await Case.find({ submittedBy: req.user.id })
+      .sort({ createdAt: -1 }); // Newest first
+
+    res.status(200).json({ 
+      success: true, 
+      count: cases.length, 
+      data: cases 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

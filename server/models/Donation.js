@@ -2,20 +2,39 @@
 const mongoose = require('mongoose');
 
 const DonationSchema = new mongoose.Schema({
+  // Link to a registered user (Optional, for Guests)
   donor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: false // Can be null if it's a "Guest Donation" (optional feature)
+    required: false 
   },
+  
+  // NEW: Hardcoded donor info. 
+  // Crucial for Guest donations or if a User deletes their account later.
+  donorName: {
+    type: String,
+    required: [true, 'Please provide the donor name'],
+    trim: true
+  },
+  donorEmail: {
+    type: String,
+    required: false,
+    lowercase: true,
+    trim: true
+  },
+
+  // Link to the specific Campaign
   campaign: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Campaign',
     required: [true, 'Donation must belong to a campaign']
   },
+  
+  // Financial Details
   amount: {
     type: Number,
     required: [true, 'Please add an amount'],
-    min: 1
+    min: [1, 'Minimum donation is $1']
   },
   transactionId: {
     type: String,
@@ -28,11 +47,13 @@ const DonationSchema = new mongoose.Schema({
     enum: ['Stripe', 'Razorpay', 'Cash', 'BankTransfer'],
     default: 'Stripe'
   },
+  
   // Privacy Feature: Anonymous Mode
   isAnonymous: {
     type: Boolean,
     default: false
   },
+  
   // Status tracking
   status: {
     type: String,

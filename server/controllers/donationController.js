@@ -18,13 +18,13 @@ exports.createCampaign = async (req, res) => {
   }
 };
 
-// server/controllers/donationController.js
-
-// server/controllers/donationController.js
-
+// @desc    Process a new donation
+// @route   POST /api/donate
+// @access  Public (Guests) or Private (Logged In)
 exports.processDonation = async (req, res) => {
   try {
-    const { campaignId, amount, isAnonymous, paymentMethod } = req.body;
+    // guestName and guestEmail are used if the user is NOT logged in
+    const { campaignId, amount, isAnonymous, paymentGateway, guestName, guestEmail } = req.body;
 
     // 1. Check Campaign
     const campaign = await Campaign.findById(campaignId);
@@ -34,21 +34,36 @@ exports.processDonation = async (req, res) => {
       return res.status(400).json({ error: 'Campaign has ended' });
     }
 
-    // 2. Identify Donor (User ID or null for Guest)
-    const donorId = req.user ? req.user.id : null;
+    // 2. Identify Donor (Pull from secure token if logged in, else use Guest input)
+    let donorId = null;
+    let finalName = guestName;
+    let finalEmail = guestEmail;
 
-    // 3. GENERATE FAKE TRANSACTION ID (The Fix)
-    // In a real app, Stripe gives us this. Here, we fake it.
+    if (req.user) {
+      donorId = req.user.id;
+      finalName = req.user.name;
+      finalEmail = req.user.email;
+    }
+
+    // Fallback validation: We MUST have a name to satisfy the database model
+    if (!finalName) {
+      return res.status(400).json({ error: 'Donor name is strictly required' });
+    }
+
+    // 3. GENERATE FAKE TRANSACTION ID
     const fakeTxnId = `TXN_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
     // 4. Create Donation Record
     const donation = await Donation.create({
       donor: donorId,
+      donorName: finalName,
+      donorEmail: finalEmail,
       campaign: campaignId,
       amount,
-      isAnonymous: donorId ? isAnonymous : true,
-      paymentMethod: paymentMethod || 'Credit Card',
-      transactionId: fakeTxnId // <--- ADDED THIS FIELD
+      isAnonymous: isAnonymous || false,
+      paymentGateway: paymentGateway || 'Stripe',
+      transactionId: fakeTxnId,
+      status: 'Success' // Assuming immediate success for the simulation
     });
 
     // 5. Update Campaign Total
@@ -62,7 +77,7 @@ exports.processDonation = async (req, res) => {
   }
 };
 
-// @desc    Get Public Donations for a Campaign
+// @desc    Get Public Donations (Masked)
 // @route   GET /api/donations/campaign/:id
 // @access  Public
 exports.getCampaignDonations = async (req, res) => {
@@ -70,14 +85,12 @@ exports.getCampaignDonations = async (req, res) => {
     const donations = await Donation.find({ 
       campaign: req.params.id, 
       status: 'Success' 
-    })
-    .populate('donor', 'name') // Get donor name
-    .sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 });
 
-    // Handle "Anonymous Mode" logic for public view
+    // Handle "Anonymous Mode" logic for the public view
     const publicData = donations.map(d => ({
       amount: d.amount,
-      donorName: d.isAnonymous ? "Anonymous Donor" : d.donor.name, // The Mask
+      donorName: d.isAnonymous ? "Anonymous Donor" : d.donorName, // The Mask
       date: d.createdAt
     }));
 
@@ -88,8 +101,22 @@ exports.getCampaignDonations = async (req, res) => {
   }
 };
 
+// @desc    Get Admin Donations (Unmasked Financial History)
+// @route   GET /api/donations/campaign/:id/admin
+// @access  Private (Admins & Lead Dev)
+exports.getAdminDonations = async (req, res) => {
+  try {
+    const donations = await Donation.find({ campaign: req.params.id })
+      .sort({ createdAt: -1 }); // Newest first
+
+    res.status(200).json({ success: true, count: donations.length, data: donations });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
 // @desc    Get All Active Campaigns
-// @route   GET /api/finance/campaigns
+// @route   GET /api/campaigns
 // @access  Public
 exports.getAllCampaigns = async (req, res) => {
   try {

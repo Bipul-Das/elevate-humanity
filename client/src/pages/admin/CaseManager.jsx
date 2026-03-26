@@ -185,7 +185,7 @@ const CaseManager = () => {
                       helped
                     </div>
                     <div className="border border-dark p-3 text-start bg-light">
-                      <strong>Received or provided:</strong>{" "}
+                      <strong>Provided:</strong>{" "}
                       {c.aidProvided
                         .map((item) => `${item.itemName} ${item.quantity}`)
                         .join(", ")}

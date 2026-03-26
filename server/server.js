@@ -40,6 +40,7 @@ app.use('/api/cases', require('./routes/caseRoutes'));
 app.use('/api/public', require('./routes/publicRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/applications', require('./routes/applicationRoutes'));
+app.use('/api/events', require('./routes/eventRoutes'));
 app.listen(PORT, () => {
   console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });

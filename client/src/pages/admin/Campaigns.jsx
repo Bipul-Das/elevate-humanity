@@ -4,6 +4,7 @@ import {
   getCampaigns,
   createCampaign,
   donate,
+  getAdminDonations, // <--- IMPORT NEW SERVICE
 } from "../../services/donationService";
 import toast from "react-hot-toast";
 
@@ -14,7 +15,7 @@ const Campaigns = () => {
   const isAdmin = ["Lead Developer", "Admin"].includes(user?.role);
 
   // View States
-  const [activeTab, setActiveTab] = useState("ongoing"); // 'ongoing' | 'ended'
+  const [activeTab, setActiveTab] = useState("ongoing");
 
   // Form States
   const [newCamp, setNewCamp] = useState({
@@ -24,7 +25,7 @@ const Campaigns = () => {
     deadline: "",
   });
 
-  // Checkout/Payment States
+  // Checkout States
   const [donation, setDonation] = useState({
     id: "",
     amount: "",
@@ -38,17 +39,10 @@ const Campaigns = () => {
     cvv: "",
   });
 
-  // Ledger State (For View Donations Modal)
-  const [viewingDonations, setViewingDonations] = useState(null);
-  // Mock data to match sketch requirements until backend endpoint is built
-  const mockDonationsLedger = [
-    { id: 1, date: "2.2.2026", email: "jenny@mail.com", amount: 500 },
-    { id: 2, date: "1.2.2026", email: "jemma@mail.com", amount: 800 },
-    { id: 3, date: "2.1.2026", email: "jenny@mail.com", amount: 500 },
-    { id: 4, date: "1.1.2026", email: "jemma@mail.com", amount: 800 },
-    { id: 5, date: "12.12.2025", email: "jenny@mail.com", amount: 500 },
-    { id: 6, date: "11.12.2025", email: "jemma@mail.com", amount: 800 },
-  ];
+  // Ledger States (Real Data Now)
+  const [viewingCampaign, setViewingCampaign] = useState(null); // Which campaign is clicked
+  const [ledgerData, setLedgerData] = useState([]); // The actual fetched donations
+  const [ledgerLoading, setLedgerLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -72,19 +66,15 @@ const Campaigns = () => {
 
   const ongoingCampaigns = campaigns.filter((c) => !isEnded(c));
   const endedCampaigns = campaigns.filter((c) => isEnded(c));
-
-  // Non-admins only ever see ongoing campaigns
   const displayCampaigns =
     isAdmin && activeTab === "ended" ? endedCampaigns : ongoingCampaigns;
 
   // --- ACTIONS ---
   const handleCreate = async (e) => {
     e.preventDefault();
-
-    // Strict Date Validation
     const selectedDate = new Date(newCamp.deadline);
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate day-to-day comparison
+    today.setHours(0, 0, 0, 0);
 
     if (selectedDate <= today) {
       return toast.error("Campaign deadline must be a future date");
@@ -105,6 +95,21 @@ const Campaigns = () => {
     }
   };
 
+  // NEW: Fetch Donations when clicking "View Donations"
+  const fetchDonations = async (camp) => {
+    setViewingCampaign(camp);
+    setLedgerLoading(true);
+    try {
+      const res = await getAdminDonations(camp._id);
+      setLedgerData(res.data);
+    } catch (err) {
+      toast.error("Failed to load donation ledger.");
+      setLedgerData([]);
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
+
   // Payment Formatter Helpers
   const formatCardNumber = (value) => {
     return value
@@ -121,34 +126,41 @@ const Campaigns = () => {
       .substring(0, 5);
   };
 
-  const handleDonate = async (e) => {
-    e.preventDefault();
+const handleDonate = async (e) => {
+  e.preventDefault();
 
-    // Strict Validation for the Mock Gateway
-    if (!donation.amount || donation.amount <= 0)
-      return toast.error("Enter a valid amount");
-    if (paymentDetails.cardNumber.replace(/\s/g, "").length !== 16)
-      return toast.error("Invalid 16-digit Card Number");
-    if (paymentDetails.expiry.length !== 5)
-      return toast.error("Invalid Expiry Date (MM/YY)");
-    if (paymentDetails.cvv.length < 3) return toast.error("Invalid CVV");
+  // 1. Validations
+  if (!donation.amount || donation.amount <= 0)
+    return toast.error("Enter a valid amount");
+  if (!paymentDetails.cardName)
+    return toast.error("Cardholder Name is required"); // <-- NEW CHECK
+  if (paymentDetails.cardNumber.replace(/\s/g, "").length !== 16)
+    return toast.error("Invalid 16-digit Card Number");
+  if (paymentDetails.expiry.length !== 5)
+    return toast.error("Invalid Expiry Date (MM/YY)");
+  if (paymentDetails.cvv.length < 3) return toast.error("Invalid CVV");
 
-    try {
-      await donate({
-        campaignId: donation.id,
-        amount: donation.amount,
-        isAnonymous: donation.isAnonymous,
-      });
-      toast.success("Payment Verified & Donation Successful! 🎉");
+  try {
+    // 2. Send the exact payload the backend is looking for
+    await donate({
+      campaignId: donation.id,
+      amount: donation.amount,
+      isAnonymous: donation.isAnonymous,
+      // NEW: Send the name and email! (Uses logged-in user, falls back to card name)
+      guestName: user?.name || paymentDetails.cardName,
+      guestEmail: user?.email || "guest@donation.com",
+    });
 
-      // Reset Forms
-      setDonation({ id: "", amount: "", isAnonymous: false, title: "" });
-      setPaymentDetails({ cardName: "", cardNumber: "", expiry: "", cvv: "" });
-      loadData();
-    } catch (err) {
-      toast.error(err.response?.data?.error || "Payment gateway failed");
-    }
-  };
+    toast.success("Payment Verified & Donation Successful! 🎉");
+
+    // 3. Reset Forms
+    setDonation({ id: "", amount: "", isAnonymous: false, title: "" });
+    setPaymentDetails({ cardName: "", cardNumber: "", expiry: "", cvv: "" });
+    loadData();
+  } catch (err) {
+    toast.error(err.response?.data?.error || "Payment gateway failed");
+  }
+};
 
   if (loading)
     return (
@@ -234,7 +246,6 @@ const Campaigns = () => {
                       {camp.description}
                     </p>
 
-                    {/* Progress Area */}
                     <div className="mb-4">
                       <div className="d-flex justify-content-between small fw-bold text-dark mb-2">
                         <span className={isFull ? "text-success" : ""}>
@@ -267,7 +278,7 @@ const Campaigns = () => {
                         )}
                         <button
                           className="btn btn-primary w-100 rounded-3 py-2 fw-bold"
-                          onClick={() => setViewingDonations(camp)}
+                          onClick={() => fetchDonations(camp)}
                           data-bs-toggle="modal"
                           data-bs-target="#donationsModal"
                         >
@@ -291,12 +302,10 @@ const Campaigns = () => {
                         >
                           Donate Now
                         </button>
-
-                        {/* NEW: Admins can view donations for ongoing campaigns too */}
                         {isAdmin && (
                           <button
                             className="btn btn-primary w-100 rounded-3 py-2 fw-bold mt-2"
-                            onClick={() => setViewingDonations(camp)}
+                            onClick={() => fetchDonations(camp)}
                             data-bs-toggle="modal"
                             data-bs-target="#donationsModal"
                           >
@@ -316,11 +325,7 @@ const Campaigns = () => {
         )}
       </div>
 
-      {/* ========================================================= */}
-      {/* MODALS AREA */}
-      {/* ========================================================= */}
-
-      {/* MODAL 1: Create Campaign (Admin) */}
+      {/* MODAL 1: Create Campaign (Omitted for brevity, remains unchanged) */}
       <div className="modal fade" id="createModal">
         <div className="modal-dialog">
           <div className="modal-content rounded-4 border-0 shadow-lg">
@@ -398,7 +403,7 @@ const Campaigns = () => {
         </div>
       </div>
 
-      {/* MODAL 2: Checkout / Mock Payment Gateway */}
+      {/* MODAL 2: Checkout (Omitted for brevity, remains unchanged) */}
       <div className="modal fade" id="checkoutModal">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content rounded-4 border-0 shadow-lg">
@@ -415,9 +420,7 @@ const Campaigns = () => {
                 data-bs-dismiss="modal"
               ></button>
             </div>
-
             <div className="modal-body p-4">
-              {/* Amount Input */}
               <div className="mb-4 text-center">
                 <label className="form-label text-muted fw-bold text-uppercase small">
                   Donation Amount
@@ -438,8 +441,6 @@ const Campaigns = () => {
                   />
                 </div>
               </div>
-
-              {/* Credit Card Mock UI */}
               <div className="bg-light p-3 rounded-4 border mb-4">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <span className="fw-bold text-dark small">
@@ -450,7 +451,6 @@ const Campaigns = () => {
                     <span className="badge bg-secondary">MC</span>
                   </div>
                 </div>
-
                 <div className="mb-3">
                   <input
                     type="text"
@@ -465,7 +465,6 @@ const Campaigns = () => {
                     }
                   />
                 </div>
-
                 <div className="mb-3">
                   <input
                     type="text"
@@ -481,7 +480,6 @@ const Campaigns = () => {
                     }
                   />
                 </div>
-
                 <div className="row g-2">
                   <div className="col-6">
                     <input
@@ -515,8 +513,6 @@ const Campaigns = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Anonymous Toggle */}
               <div className="form-check form-switch mb-4 bg-light p-3 rounded-3 border d-flex align-items-center justify-content-between">
                 <label
                   className="form-check-label text-muted fw-bold m-0 ms-2"
@@ -535,7 +531,6 @@ const Campaigns = () => {
                   }
                 />
               </div>
-
               <button
                 className="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm d-flex justify-content-center align-items-center gap-2"
                 onClick={handleDonate}
@@ -543,18 +538,12 @@ const Campaigns = () => {
               >
                 <span>🔒 Pay ${donation.amount || "0"} Securely</span>
               </button>
-              <div
-                className="text-center mt-3 text-muted"
-                style={{ fontSize: "0.75rem" }}
-              >
-                Payments are processed via 256-bit encrypted mockup gateway.
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* MODAL 3: View Donations Ledger (Admin Ended Tab) */}
+      {/* MODAL 3: View Real Donations Ledger (Admin) */}
       <div className="modal fade" id="donationsModal">
         <div className="modal-dialog modal-dialog-scrollable">
           <div className="modal-content rounded-4 border-0 shadow-lg">
@@ -563,7 +552,7 @@ const Campaigns = () => {
                 <h5 className="modal-title fw-bold text-dark">
                   Donation Ledger
                 </h5>
-                <small className="text-muted">{viewingDonations?.title}</small>
+                <small className="text-muted">{viewingCampaign?.title}</small>
               </div>
               <button
                 type="button"
@@ -572,27 +561,62 @@ const Campaigns = () => {
               ></button>
             </div>
             <div className="modal-body p-0">
-              <ul className="list-group list-group-flush">
-                {mockDonationsLedger.map((tx) => (
-                  <li
-                    key={tx.id}
-                    className="list-group-item p-4 d-flex justify-content-between align-items-center"
-                  >
-                    <div>
-                      <div className="fw-bold text-dark mb-1">{tx.email}</div>
-                      <small className="text-muted">On {tx.date}</small>
-                    </div>
-                    <div className="fs-5 fw-bold text-success">
-                      +${tx.amount}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <div className="p-4 text-center border-top">
-                <button className="btn btn-outline-secondary px-4 rounded-pill">
-                  Load more
-                </button>
-              </div>
+              {ledgerLoading ? (
+                <div className="p-5 text-center text-muted">
+                  Fetching Records...
+                </div>
+              ) : ledgerData.length === 0 ? (
+                <div className="p-5 text-center text-muted">
+                  No donations found for this campaign.
+                </div>
+              ) : (
+                <ul className="list-group list-group-flush">
+                  {ledgerData.map((tx) => (
+                    <li
+                      key={tx._id}
+                      className="list-group-item p-4 d-flex justify-content-between align-items-center"
+                    >
+                      <div>
+                        {/* Display real name, note if it was anonymous to the public */}
+                        <div className="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                          {/* Mask the name if anonymous */}
+                          {tx.isAnonymous ? "Anonymous Donor" : tx.donorName}
+                          {tx.isAnonymous && (
+                            <span
+                              className="badge bg-secondary"
+                              style={{ fontSize: "0.6rem" }}
+                            >
+                              ANON
+                            </span>
+                          )}
+                        </div>
+                        <div className="small text-muted mb-1">
+                          {/* Mask the email if anonymous */}
+                          {tx.isAnonymous
+                            ? "Hidden for Privacy"
+                            : tx.donorEmail || "No Email"}
+                        </div>
+                        <small
+                          className="text-muted font-monospace"
+                          style={{ fontSize: "0.70rem" }}
+                        >
+                          {tx.transactionId} •{" "}
+                          {new Date(tx.createdAt).toLocaleDateString()}
+                        </small>
+                      </div>
+                      <div className="fs-5 fw-bold text-success text-end">
+                        +${tx.amount.toLocaleString()}
+                        <div
+                          className="text-muted small fw-normal"
+                          style={{ fontSize: "0.75rem" }}
+                        >
+                          {tx.paymentGateway}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>
