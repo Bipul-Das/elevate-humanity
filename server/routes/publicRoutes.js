@@ -1,9 +1,9 @@
+// server/routes/publicRoutes.js
 const express = require('express');
 const router = express.Router();
-const { getPublicStats } = require('../controllers/publicController');
-const { submitApplication } = require('../controllers/applicationController'); // <--- Import this
+const { getLandingStats } = require('../controllers/publicController');
 
-router.get('/stats', getPublicStats);
-router.post('/apply', submitApplication); // <--- Add this Route
+// Open public route (No auth middleware required)
+router.get('/stats', getLandingStats);
 
 module.exports = router;
