@@ -116,9 +116,11 @@ const Events = () => {
           </div>
         ) : (
           displayEvents.map((event) => {
+            const userId = user?._id || user?.id;
+
             const hasJoined = isVolunteer
-              ? event.volunteers.includes(user.id)
-              : event.attendees.includes(user.id);
+              ? event.volunteers.includes(userId)
+              : event.attendees.includes(userId);
 
             const countdown = getCountdown(event.date);
 
@@ -179,28 +181,46 @@ const Events = () => {
                 </div>
 
                 {/* Bottom: Action Button (Only for New/Ongoing) */}
+                {/* Bottom: Action Button (Only for New/Ongoing) */}
                 {event.status !== "Ended" && (
-                  <div className="text-center">
-                    <button
-                      onClick={() => handleJoin(event._id)}
-                      disabled={event.status === "Ongoing"} // Locked on the day of event
-                      className={`btn rounded-0 px-4 py-2 border border-dark fw-bold ${
-                        hasJoined
-                          ? "bg-secondary text-white"
-                          : "bg-white text-dark"
-                      }`}
-                    >
-                      {hasJoined
-                        ? isVolunteer
-                          ? "Joined as Volunteer ✓"
-                          : "Interested (Joined) ✓"
-                        : isVolunteer
-                        ? "Volunteer"
-                        : "Interested"}
-                    </button>
+                  <div className="text-center mt-3 pt-3 border-top">
+                    {hasJoined ? (
+                      // --- STATE: USER HAS ALREADY JOINED ---
+                      <div className="d-flex flex-column align-items-center gap-2">
+                        <span className="badge bg-success px-4 py-2 fs-6 rounded-pill shadow-sm">
+                          ✓ Already joined
+                        </span>
+                        <button
+                          onClick={() => handleJoin(event._id)}
+                          disabled={event.status === "Ongoing"}
+                          className="btn btn-outline-danger btn-sm mt-2 fw-bold rounded-0 px-4"
+                        >
+                          Cancel participation
+                        </button>
+                      </div>
+                    ) : (
+                      // --- STATE: USER HAS NOT JOINED YET ---
+                      <div className="d-flex flex-column align-items-center gap-2">
+                        <span
+                          className="text-muted small fw-bold text-uppercase"
+                          style={{ letterSpacing: "1px" }}
+                        >
+                          Haven't joined yet
+                        </span>
+                        <button
+                          onClick={() => handleJoin(event._id)}
+                          disabled={event.status === "Ongoing"}
+                          className="btn btn-dark rounded-0 px-5 py-2 fw-bold shadow-sm"
+                        >
+                          {isVolunteer ? "Volunteer" : "Interested"}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Lock message for ongoing events */}
                     {event.status === "Ongoing" && (
-                      <div className="small text-danger mt-1">
-                        Registration locked (Event is Ongoing)
+                      <div className="small text-danger mt-3 fw-bold">
+                        🔒 Registration locked (Event is Ongoing)
                       </div>
                     )}
                   </div>
@@ -210,11 +230,7 @@ const Events = () => {
           })
         )}
 
-        {displayEvents.length > 0 && (
-          <button className="btn btn-outline-dark rounded-0 px-4 mt-3">
-            Load more
-          </button>
-        )}
+        
       </div>
     </div>
   );

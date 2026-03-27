@@ -198,12 +198,7 @@ const CaseManager = () => {
         )}
       </div>
 
-      {/* LOAD MORE */}
-      <div className="text-center mt-5">
-        <button className="btn btn-outline-dark rounded-0 px-4 py-2">
-          Load more
-        </button>
-      </div>
+      
 
       {/* ========================================================= */}
       {/* THE HELP MODAL (Inventory Selection) */}

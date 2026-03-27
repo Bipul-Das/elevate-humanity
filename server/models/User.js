@@ -39,6 +39,8 @@ const UserSchema = new mongoose.Schema({
     ]
   },
 
+  profileImage: { type: String },
+
   // --- LOCATION DATA ---
   city: {
     type: String,

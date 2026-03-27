@@ -147,13 +147,7 @@ const MyRequests = () => {
         )}
       </div>
 
-      {requests.length > 0 && (
-        <div className="text-center mt-5">
-          <button className="btn btn-outline-dark rounded-0 px-4 py-2 fw-bold">
-            Load more
-          </button>
-        </div>
-      )}
+      
     </div>
   );
 };

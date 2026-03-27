@@ -29,6 +29,7 @@ import Applications from "./pages/admin/Applications";
 import MyRequests from "./pages/admin/MyRequests";
 import Events from "./pages/admin/Events";
 import CreateEvent from "./pages/admin/CreateEvent";
+import Settings from "./pages/admin/Settings";
 
 function App() {
   return (
@@ -59,6 +60,8 @@ function App() {
             <Route path="/my-requests" element={<MyRequests />} />
             <Route path="/campaigns" element={<Campaigns />} />
             <Route path="/events" element={<Events />} />
+            
+            <Route path="/settings" element={<Settings />} />
 
             {/* 🔥 STRICT ROUTES: Locked to Admins and Lead Devs Only */}
             <Route
@@ -69,7 +72,6 @@ function App() {
               <Route path="/create-event" element={<CreateEvent />} />
               {/* <Route path="/campaigns" element={<Campaigns />} /> */}
               <Route path="/cases" element={<CaseManager />} />{" "}
-              {/* Handle Requests */}
               <Route path="/applications" element={<Applications />} />
             </Route>
           </Route>
