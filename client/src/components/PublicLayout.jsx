@@ -22,6 +22,7 @@ const PublicLayout = () => {
     { label: "About Us", path: "/about" },
     { label: "Our Services", path: "/services" },
     { label: "Apply", path: "/apply" },
+    { label: "Donate", path: "/donate" },
   ];
 
   return (

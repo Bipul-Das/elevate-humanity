@@ -428,9 +428,7 @@ const Services = () => {
         className="py-5 text-center position-relative bg-white"
         style={{ overflow: "hidden" }}
       >
-        <div
-          className="position-absolute top-0 start-50 translate-middle w-100 h-100"
-        ></div>
+        <div className="position-absolute top-0 start-50 translate-middle w-100 h-100"></div>
         <div
           className={`container py-5 position-relative z-1 animate-fade-up delay-4 ${
             isVisible ? "" : "d-none"

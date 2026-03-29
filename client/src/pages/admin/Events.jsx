@@ -7,12 +7,14 @@ const Events = () => {
   const [events, setEvents] = useState([]);
   const [activeTab, setActiveTab] = useState("New");
   const [now, setNow] = useState(new Date().getTime());
+  const [isVisible, setIsVisible] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
   const isVolunteer = user?.role === "Volunteer";
 
   // Real-time clock for countdowns
   useEffect(() => {
+    setIsVisible(true);
     const timer = setInterval(() => setNow(new Date().getTime()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -34,7 +36,7 @@ const Events = () => {
     try {
       await toggleJoinEvent(eventId);
       loadEvents(); // Refresh data to update counts
-      toast.success("Event participation updated!");
+      toast.success("Operational participation updated!");
     } catch (err) {
       toast.error("Failed to update status");
     }
@@ -79,43 +81,98 @@ const Events = () => {
 
   const displayEvents = activeTab === "New" ? newEvents : olderEvents;
 
-  return (
-    <div className="container-fluid p-4">
-      {/* Tabs Layout matching wireframe */}
-      <ul className="nav nav-tabs mb-4 border-bottom border-dark">
-        <li className="nav-item">
-          <button
-            className={`nav-link px-4 rounded-0 ${
-              activeTab === "New"
-                ? "active border-dark border-bottom-0 fw-bold text-dark"
-                : "text-muted border-0"
-            }`}
-            onClick={() => setActiveTab("New")}
-          >
-            New
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link px-4 rounded-0 ${
-              activeTab === "Older"
-                ? "active border-dark border-bottom-0 fw-bold text-dark"
-                : "text-muted border-0"
-            }`}
-            onClick={() => setActiveTab("Older")}
-          >
-            Older
-          </button>
-        </li>
-      </ul>
+  // Enterprise-Grade Custom Styles
+  const customStyles = `
+    .hover-lift-card {
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .hover-lift-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08) !important;
+      border-color: rgba(37, 99, 235, 0.2) !important;
+    }
 
-      <div className="d-flex flex-column gap-4 align-items-center">
+    .animate-fade-up {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tab-custom {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+      padding-bottom: 0.75rem;
+      opacity: 0.6;
+      font-weight: 600;
+    }
+    
+    .tab-custom.active {
+      border-bottom: 3px solid #2563EB;
+      opacity: 1;
+      color: #0F172A !important;
+    }
+
+    .tab-custom:hover {
+      opacity: 1;
+    }
+
+    .telemetry-box {
+      background-color: #0F172A;
+      color: #38BDF8;
+      font-family: 'Courier New', Courier, monospace;
+      letter-spacing: 1px;
+    }
+  `;
+
+  return (
+    <div className="container-fluid p-4 p-md-5 bg-light min-vh-100">
+      <style>{customStyles}</style>
+
+      {/* Header Section */}
+      <div className={`mb-5 animate-fade-up ${isVisible ? "" : "d-none"}`}>
+        <h2 className="fw-bolder text-dark mb-2 d-flex align-items-center gap-3">
+          <div className="bg-primary bg-opacity-10 text-primary p-2 rounded-3 fs-4 d-flex align-items-center justify-content-center" style={{ width: "45px", height: "45px" }}>
+            ⏱️
+          </div>
+          Field Deployments
+        </h2>
+        <p className="text-muted ms-1">Monitor upcoming operations, track live logistics, and manage network participation.</p>
+      </div>
+
+      {/* Modern Segmented Tabs */}
+      <div className={`d-flex gap-4 mb-5 border-bottom animate-fade-up ${isVisible ? "" : "d-none"}`} style={{ animationDelay: "0.1s" }}>
+        <div
+          className={`tab-custom text-secondary ${activeTab === "New" ? "active" : ""}`}
+          onClick={() => setActiveTab("New")}
+        >
+          Active Operations
+        </div>
+        <div
+          className={`tab-custom text-secondary ${activeTab === "Older" ? "active" : ""}`}
+          onClick={() => setActiveTab("Older")}
+        >
+          Archived Operations
+        </div>
+      </div>
+
+      {/* Event Feed */}
+      <div className="d-flex flex-column gap-4 align-items-center pb-5">
         {displayEvents.length === 0 ? (
-          <div className="text-muted p-5">
-            No events found in this category.
+          <div className={`w-100 animate-fade-up ${isVisible ? "" : "d-none"}`} style={{ maxWidth: "800px", animationDelay: "0.2s" }}>
+            <div className="bg-white rounded-4 shadow-sm p-5 border text-center">
+              <div className="text-muted fs-1 mb-3">📅</div>
+              <h4 className="fw-bold text-dark">No Deployments Found</h4>
+              <p className="text-muted mb-0">There are currently no operations categorized under this filter.</p>
+            </div>
           </div>
         ) : (
-          displayEvents.map((event) => {
+          displayEvents.map((event, index) => {
             const userId = user?._id || user?.id;
 
             const hasJoined = isVolunteer
@@ -127,110 +184,172 @@ const Events = () => {
             return (
               <div
                 key={event._id}
-                className="card border border-dark rounded-0 w-100 p-3"
-                style={{ maxWidth: "800px" }}
+                className={`card border-0 shadow-sm rounded-4 w-100 hover-lift-card bg-white animate-fade-up overflow-hidden`}
+                style={{
+                  maxWidth: "800px",
+                  animationDelay: `${0.1 * (index + 2)}s`,
+                }}
               >
-                {/* Top Row: Info Boxes */}
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  {/* Left: Time Status */}
-                  <div
-                    className="border border-dark p-2 text-center"
-                    style={{ minWidth: "150px" }}
-                  >
-                    {event.status === "Ended" && (
-                      <div className="small">This event ended on</div>
-                    )}
-                    <div className="fw-bold">
-                      {event.status === "Upcoming" && countdown}
-                      {event.status === "Ongoing" && "Ongoing"}
-                      {event.status === "Ended" &&
-                        new Date(event.date).toLocaleDateString()}
-                    </div>
-                  </div>
-
-                  {/* Middle: Core Details */}
-                  <div className="text-center px-3">
-                    <h5 className="fw-bold mb-1">{event.title}</h5>
-                    <div className="mb-0">{event.location}</div>
-                    <div>Date: {new Date(event.date).toLocaleDateString()}</div>
-                  </div>
-
-                  {/* Right: Confirmed Stats */}
-                  <div
-                    className="border border-dark p-2 text-center"
-                    style={{ minWidth: "150px" }}
-                  >
-                    <div className="fw-bold border-bottom border-dark mb-1 pb-1">
-                      {event.status === "Ended" ? "Total joined" : "confirmed"}
-                    </div>
-                    <div className="small">
-                      {event.volunteers.length} volunteers
-                    </div>
-                    <div className="small">
-                      {event.attendees.length} attendees
-                    </div>
-                  </div>
-                </div>
-
-                {/* Middle: Description Box */}
+                {/* Top Colored Bar Indicator */}
                 <div
-                  className="border border-dark p-3 mb-3 bg-light text-center"
-                  style={{ minHeight: "100px" }}
-                >
-                  {event.description}
-                </div>
+                  style={{ height: "4px" }}
+                  className={`w-100 ${
+                    event.status === "Ongoing"
+                      ? "bg-success"
+                      : event.status === "Ended"
+                      ? "bg-secondary"
+                      : "bg-primary"
+                  }`}
+                ></div>
 
-                {/* Bottom: Action Button (Only for New/Ongoing) */}
-                {/* Bottom: Action Button (Only for New/Ongoing) */}
-                {event.status !== "Ended" && (
-                  <div className="text-center mt-3 pt-3 border-top">
-                    {hasJoined ? (
-                      // --- STATE: USER HAS ALREADY JOINED ---
-                      <div className="d-flex flex-column align-items-center gap-2">
-                        <span className="badge bg-success px-4 py-2 fs-6 rounded-pill shadow-sm">
-                          ✓ Already joined
+                <div className="card-body p-0">
+                  <div className="row g-0">
+                    {/* Left Panel: Details */}
+                    <div className="col-md-8 p-4 p-md-5">
+                      <div className="d-flex align-items-center gap-3 mb-3">
+                        {event.status === "Upcoming" && (
+                          <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill small fw-bold text-uppercase">
+                            Upcoming
+                          </span>
+                        )}
+                        {event.status === "Ongoing" && (
+                          <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill small fw-bold text-uppercase d-flex align-items-center gap-2">
+                            <span
+                              className="spinner-grow spinner-grow-sm text-success"
+                              style={{ width: "8px", height: "8px" }}
+                            ></span>
+                            Operation Active
+                          </span>
+                        )}
+                        {event.status === "Ended" && (
+                          <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-2 rounded-pill small fw-bold text-uppercase">
+                            Operation Concluded
+                          </span>
+                        )}
+
+                        <span className="text-muted small fw-bold d-flex align-items-center gap-1">
+                          🗓 {new Date(event.date).toLocaleDateString()}
                         </span>
-                        <button
-                          onClick={() => handleJoin(event._id)}
-                          disabled={event.status === "Ongoing"}
-                          className="btn btn-outline-danger btn-sm mt-2 fw-bold rounded-0 px-4"
-                        >
-                          Cancel participation
-                        </button>
                       </div>
-                    ) : (
-                      // --- STATE: USER HAS NOT JOINED YET ---
-                      <div className="d-flex flex-column align-items-center gap-2">
+
+                      <h4 className="fw-bolder text-dark mb-2 lh-sm">
+                        {event.title}
+                      </h4>
+                      <div className="text-muted small fw-bold mb-4 d-flex align-items-center gap-1">
+                        <span className="text-primary">📍</span>{" "}
+                        {event.location}
+                      </div>
+
+                      <div className="bg-light p-3 rounded-3 border mb-4">
+                        <p
+                          className="mb-0 small text-dark lh-lg font-monospace"
+                          style={{ fontSize: "0.85rem" }}
+                        >
+                          "{event.description}"
+                        </p>
+                      </div>
+
+                      {/* Action Area (Only for New/Ongoing) */}
+                      {event.status !== "Ended" && (
+                        <div className="mt-2">
+                          {hasJoined ? (
+                            <div className="d-flex align-items-center gap-3">
+                              <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-4 py-2 fs-6 rounded-pill">
+                                ✓ Roster Confirmed
+                              </span>
+                              <button
+                                onClick={() => handleJoin(event._id)}
+                                disabled={event.status === "Ongoing"}
+                                className="btn btn-link text-danger small fw-bold px-0 text-decoration-none"
+                              >
+                                Withdraw Commitment
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="d-flex flex-column flex-sm-row align-items-sm-center gap-3">
+                              <button
+                                onClick={() => handleJoin(event._id)}
+                                disabled={event.status === "Ongoing"}
+                                className="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm text-uppercase"
+                                style={{ letterSpacing: "1px" }}
+                              >
+                                {isVolunteer
+                                  ? "Mobilize for Event"
+                                  : "Pledge Support"}
+                              </button>
+                              <span
+                                className="text-muted small fw-bold text-uppercase"
+                                style={{ letterSpacing: "1px" }}
+                              >
+                                Awaiting Confirmation
+                              </span>
+                            </div>
+                          )}
+
+                          {event.status === "Ongoing" && (
+                            <div className="small text-danger mt-3 fw-bold d-flex align-items-center gap-2">
+                              🔒 Deployment Locked (Operation Active)
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Panel: Telemetry & Stats */}
+                    <div className="col-md-4 bg-light border-start p-4 p-md-5 d-flex flex-column justify-content-center h-100">
+                      {/* Telemetry Clock */}
+                      {event.status === "Upcoming" && countdown && (
+                        <div className="mb-5">
+                          <span
+                            className="small text-muted fw-bold text-uppercase mb-2 d-block"
+                            style={{ letterSpacing: "1px" }}
+                          >
+                            Launch Window
+                          </span>
+                          <div className="telemetry-box p-3 rounded-3 text-center fw-bold fs-6 shadow-inner">
+                            {countdown}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Network Participation Stats */}
+                      <div>
                         <span
-                          className="text-muted small fw-bold text-uppercase"
+                          className="small text-muted fw-bold text-uppercase mb-3 d-block"
                           style={{ letterSpacing: "1px" }}
                         >
-                          Haven't joined yet
+                          {event.status === "Ended"
+                            ? "Final Participation"
+                            : "Confirmed Roster"}
                         </span>
-                        <button
-                          onClick={() => handleJoin(event._id)}
-                          disabled={event.status === "Ongoing"}
-                          className="btn btn-dark rounded-0 px-5 py-2 fw-bold shadow-sm"
-                        >
-                          {isVolunteer ? "Volunteer" : "Interested"}
-                        </button>
-                      </div>
-                    )}
 
-                    {/* Lock message for ongoing events */}
-                    {event.status === "Ongoing" && (
-                      <div className="small text-danger mt-3 fw-bold">
-                        🔒 Registration locked (Event is Ongoing)
+                        <div className="d-flex flex-column gap-3">
+                          <div className="d-flex align-items-center justify-content-between bg-white p-3 rounded-3 border shadow-sm">
+                            <span className="fw-bold text-dark small">
+                              🏃 Volunteers
+                            </span>
+                            <span className="badge bg-primary fs-6 rounded-pill">
+                              {event.volunteers.length}
+                            </span>
+                          </div>
+
+                          <div className="d-flex align-items-center justify-content-between bg-white p-3 rounded-3 border shadow-sm">
+                            <span className="fw-bold text-dark small">
+                              🤝 Attendees
+                            </span>
+                            <span className="badge bg-success fs-6 rounded-pill">
+                              {event.attendees.length}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             );
           })
         )}
-
-        
       </div>
     </div>
   );
